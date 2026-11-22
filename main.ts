@@ -12,6 +12,14 @@ def(0x30,2,0,0); def(0x31,2,1,-1); def(0x32,2,1,-1);
 def(0x33,2,0,0); def(0x34,0,0,0); def(0x40,0,1,0); def(0x41,0,2,-2);
 def(0x50,0,1,-1); def(0x51,0,1,-1); def(0x52,0,0,1); def(0x53,0,1,-1);
 
+const lengths = new Uint8Array(256), needs = new Uint8Array(256), deltas = new Int16Array(256);
+for (let op=0; op<meta.length; op++) {
+  const m = meta[op];
+  lengths[op] = m & 7;
+  needs[op] = (m >> 3) & 7;
+  deltas[op] = (m >> 6) - 2;
+}
+
 function run(p, input) {
   const s = new Int32Array(256), mem = new Int32Array(256), calls = new Int32Array(64);
   const out = Buffer.allocUnsafe(65536);
@@ -21,10 +29,10 @@ function run(p, input) {
     if (pc < 0 || pc >= p.length) { code = 9; break; }
     const op = p[pc], m = meta[op];
     if (m < 0) { code = 5; break; }
-    const len = m & 7;
+    const len = lengths[op];
     if (pc + 1 + len > p.length) { code = 9; break; }
     steps++;
-    const need = (m >> 3) & 7, delta = (m >> 6) - 2;
+    const need = needs[op], delta = deltas[op];
     if (sp < need) { code = 2; break; }
     if (sp + delta > 256) { code = 3; break; }
     let a, b, n;
